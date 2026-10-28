@@ -804,29 +804,41 @@
 <!-- Scripts -->
 <script>
     /* =========================================
-       XỬ LÝ BẢO MẬT: CHỈ NHẬP MẬT KHẨU ADMIN
+       ĐĂNG NHẬP ADMIN (FIREBASE AUTH)
        ========================================= */
     let isAuthenticated = false;
-    const MASTER_PASSWORD = 'admin';
-
     const btnAccess = document.getElementById('btnAccess');
+    const accessLabel = btnAccess.innerText;
 
-    btnAccess.addEventListener('click', () => {
+    // Bật/tắt chế độ quản trị (được Firebase Auth gọi khi trạng thái đăng nhập đổi)
+    window.setAdminMode = function (on) {
+        isAuthenticated = on;
+        document.body.classList.toggle('edit-mode', on);
+        btnAccess.innerText = on ? 'Đã mở khóa' : accessLabel;
+        btnAccess.classList.toggle('unlocked', on);
+        setTimeout(drawLines, 100);
+    };
+
+    btnAccess.addEventListener('click', async () => {
+        if (!window.cloud) {
+            alert('Chưa kết nối được Firebase. Vui lòng kiểm tra mạng rồi tải lại trang.');
+            return;
+        }
         if (isAuthenticated) {
-            alert('Bạn đã ở chế độ Quản trị viên!');
+            if (confirm('Bạn đang ở chế độ Quản trị viên. Đăng xuất?')) await window.cloud.logout();
             return;
         }
         const userInput = prompt('Vui lòng nhập mã truy cập');
         if (userInput === null) return;
-        if (userInput === MASTER_PASSWORD) {
-            isAuthenticated = true;
-            document.body.classList.add('edit-mode');
-            btnAccess.innerText = 'Đã mở khóa';
-            btnAccess.classList.add('unlocked');
+        try {
+            await window.cloud.login(userInput);
             alert('Đăng nhập Admin thành công! Đã mở khóa tính năng.');
-            setTimeout(drawLines, 100);
-        } else {
-            alert('Mật khẩu không chính xác!');
+            await window.cloud.offerMigration();
+        } catch (err) {
+            console.error(err);
+            alert(err && err.code === 'auth/network-request-failed'
+                ? 'Lỗi mạng, không đăng nhập được. Vui lòng thử lại.'
+                : 'Mật khẩu không chính xác!');
         }
     });
 
@@ -1047,11 +1059,27 @@
         });
     }
 
+    // Đọc ảnh và thu nhỏ tối đa 320px (JPEG) để mỗi thành viên nhẹ, vừa giới hạn 1MB/document của Firestore
     function readFileAsBase64(file) {
         return new Promise((resolve) => {
             if (!file) { resolve(null); return; }
             const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const ratio = Math.min(1, 320 / Math.max(img.width, img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(img.width * ratio));
+                    canvas.height = Math.max(1, Math.round(img.height * ratio));
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.onerror = () => resolve(reader.result);
+                img.src = reader.result;
+            };
             reader.readAsDataURL(file);
         });
     }
@@ -1108,7 +1136,18 @@
         updateDropdowns(parentsSelect, spouseSelect);
         renderTree();
         setTimeout(drawLines, 50);
+        if (window.cloud) window.cloud.save(members); // đồng bộ lên Firebase (chỉ Admin mới ghi được)
     }
+
+    // Các hàm để module Firebase (cuối file) gọi
+    window.getMembers = () => members;
+    window.applyCloudMembers = (list) => {
+        members = list;
+        localStorage.setItem('familyTree_v15', JSON.stringify(members)); // bản sao để xem offline
+        updateDropdowns(parentsSelect, spouseSelect);
+        renderTree();
+        setTimeout(drawLines, 50);
+    };
 
     function renderTree() {
         treeContainer.innerHTML = '';
@@ -1375,6 +1414,88 @@
     updateDropdowns(parentsSelect, spouseSelect);
     renderTree();
     setTimeout(drawLines, 100);
+</script>
+
+
+<!-- ============ FIREBASE (Firestore + Authentication) ============ -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, doc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDOjzHks-rb3nFP4qGW5lrRi34B7dc7hiA",
+        authDomain: "gia-pha-cu-dinh.firebaseapp.com",
+        projectId: "gia-pha-cu-dinh",
+        storageBucket: "gia-pha-cu-dinh.firebasestorage.app",
+        messagingSenderId: "56286804296",
+        appId: "1:56286804296:web:39cadb005905cd2cea1b7d"
+    };
+
+    // Tài khoản admin duy nhất: tạo trong Firebase Console > Authentication > Users.
+    // "Mã truy cập" khi bấm nút Truy cập chính là mật khẩu của tài khoản này.
+    const ADMIN_EMAIL = 'admin@gia-pha-cu-dinh.local';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const membersCol = collection(db, 'members');
+
+    const sig = (m) => JSON.stringify(m, Object.keys(m).sort()); // so sánh ổn định, không phụ thuộc thứ tự key
+    let cloudMap = new Map();   // id -> chữ ký bản đang có trên cloud
+    let cloudEmpty = true;
+
+    // Mọi người đều đọc được; cập nhật realtime khi admin sửa
+    onSnapshot(membersCol, (snap) => {
+        const docs = snap.docs.map(d => d.data())
+            .sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9));
+        cloudMap = new Map(docs.map(m => [m.id, sig(m)]));
+        cloudEmpty = docs.length === 0;
+        if (snap.metadata.hasPendingWrites) return; // bản ghi cục bộ vừa lưu, đã hiển thị rồi
+        if (docs.length) window.applyCloudMembers(docs.map(({ order, ...m }) => m));
+    }, (err) => console.error('Lỗi đọc Firestore:', err));
+
+    // Chỉ ghi những thành viên thay đổi (order giữ đúng thứ tự hiển thị trong từng đời)
+    async function save(list) {
+        if (!auth.currentUser) return;
+        const ops = [];
+        const ids = new Set();
+        list.forEach((m, i) => {
+            const payload = { ...m, order: i };
+            ids.add(m.id);
+            if (cloudMap.get(m.id) !== sig(payload)) ops.push(b => b.set(doc(membersCol, m.id), payload));
+        });
+        cloudMap.forEach((_, id) => { if (!ids.has(id)) ops.push(b => b.delete(doc(membersCol, id))); });
+        try {
+            for (let i = 0; i < ops.length; i += 400) {   // giới hạn 500 thao tác/batch
+                const batch = writeBatch(db);
+                ops.slice(i, i + 400).forEach(fn => fn(batch));
+                await batch.commit();
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Không lưu được lên Firebase: ' + e.message);
+        }
+    }
+
+    // Lần đầu: nếu cloud còn trống mà máy này đang có dữ liệu cũ (localStorage) thì hỏi đẩy lên
+    async function offerMigration() {
+        if (!cloudEmpty) return;
+        const local = window.getMembers();
+        if (local.length && confirm('Firebase chưa có dữ liệu. Đẩy ' + local.length + ' thành viên đang có trên máy này lên Firebase?')) {
+            await save(local);
+        }
+    }
+
+    try { await setPersistence(auth, browserSessionPersistence); } catch (e) { console.warn(e); }
+    onAuthStateChanged(auth, (user) => window.setAdminMode(!!user && user.email === ADMIN_EMAIL));
+
+    window.cloud = {
+        save,
+        offerMigration,
+        login: (code) => signInWithEmailAndPassword(auth, ADMIN_EMAIL, code),
+        logout: () => signOut(auth)
+    };
 </script>
 
 </body>
