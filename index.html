@@ -282,6 +282,18 @@
             min-width: 100%;
         }
 
+        /* Ô tìm kiếm phía trên các danh sách chọn Cha/Mẹ và Vợ/Chồng */
+        .select-search {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 6px;
+            padding: 8px 10px;
+            font: inherit;
+            font-size: 0.9rem;
+            border: 1px solid #cfcfcf;
+            border-radius: 6px;
+        }
+
         /* CHẾ ĐỘ XUẤT ẢNH: tắt zoom + transition để tọa độ đo được là tọa độ thật,
            và chừa lề 60px NGAY TRONG layer để card và line SVG dùng chung một hệ tọa độ */
         .exporting .tree-transform-layer {
@@ -1000,6 +1012,74 @@
     const spouseSelect = document.getElementById('spouseSelect');
     const editParentsSelect = document.getElementById('editParentsSelect');
     const editSpouseSelect = document.getElementById('editSpouseSelect');
+
+    /* =========================================
+       Ô TÌM KIẾM CHO CÁC DANH SÁCH CHỌN (không phân biệt dấu tiếng Việt)
+       ========================================= */
+    const normVN = (t) => (t || '').toString().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();
+
+    function applySelectFilter(select) {
+        const all = select._allOpts || [];
+        const q = normVN(select._search.value);
+        const current = select.value;
+        // Luôn giữ lại mục "trống" và mục đang được chọn để không làm mất lựa chọn hiện tại
+        const shown = !q ? all : all.filter(o => o.value === '' || o.value === current || normVN(o.text).includes(q));
+        select.innerHTML = '';
+        shown.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value;
+            opt.textContent = o.text;
+            select.appendChild(opt);
+        });
+        select.value = current;
+        if (q) select.size = Math.min(8, Math.max(2, shown.length));
+        else select.removeAttribute('size');
+    }
+
+    // Gọi sau khi danh sách được dựng lại: lưu bản đầy đủ và xóa nội dung tìm kiếm
+    function refreshSelectSearch(select) {
+        if (!select || !select._search) return;
+        select._allOpts = Array.from(select.options).map(o => ({ value: o.value, text: o.textContent }));
+        select._search.value = '';
+        select.removeAttribute('size');
+    }
+
+    function setupSelectSearch(select) {
+        const input = document.createElement('input');
+        input.type = 'search';
+        input.className = 'select-search';
+        input.placeholder = '🔍 Gõ tên để tìm nhanh...';
+        input.autocomplete = 'off';
+        select.parentNode.insertBefore(input, select);
+        select._search = input;
+
+        input.addEventListener('input', () => applySelectFilter(select));
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // không để Enter kích hoạt nút Thêm/Lưu của form
+                const q = normVN(input.value);
+                const hit = (select._allOpts || []).find(o => o.value !== '' && normVN(o.text).includes(q));
+                if (q && hit) {
+                    input.value = '';
+                    applySelectFilter(select);
+                    select.value = hit.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                select.focus();
+            }
+        });
+        // Chọn xong thì thu gọn danh sách và xóa ô tìm kiếm
+        select.addEventListener('change', () => {
+            if (input.value) { input.value = ''; applySelectFilter(select); }
+        });
+        const form = select.closest('form');
+        if (form) form.addEventListener('reset', () => setTimeout(() => { input.value = ''; applySelectFilter(select); }, 0));
+    }
+
+    [parentsSelect, spouseSelect, editParentsSelect, editSpouseSelect].forEach(setupSelectSearch);
     const treeContainer = document.getElementById('treeContainer');
     const svg = document.getElementById('linesSvg');
     const tooltip = document.getElementById('tooltip');
@@ -1057,6 +1137,9 @@
             opt.textContent = c.label;
             targetParents.appendChild(opt);
         });
+
+        refreshSelectSearch(targetParents);
+        refreshSelectSearch(targetSpouse);
     }
 
     // Đọc ảnh và thu nhỏ tối đa 320px (JPEG) để mỗi thành viên nhẹ, vừa giới hạn 1MB/document của Firestore
