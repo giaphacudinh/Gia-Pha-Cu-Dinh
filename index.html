@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIA PHẢ HỌ CÙ ĐÌNH</title>
+    
+    <!-- Thư viện hỗ trợ xuất hình ảnh -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+
+        :root {
+            --bg-color: #fcfbfa;
+            --text-main: #2c2a29;
+            --text-sub: #6e6a66;
+            --line-color: #5a5550;
+            --font-serif: 'Playfair Display', Georgia, serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            
+            --bg-male: #e2e8f0;
+            --bg-female: #fce7f3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            padding: 30px 20px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Nút Xuất Hình - Góc trái */
+        .top-left-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-export {
+            color: #ffffff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .btn-export:hover {
+            opacity: 0.85;
+        }
+
+        /* Top Bar - Nút Truy Cập (Góc phải) */
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .btn-access {
+            background-color: #dc2626;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .btn-access:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-access.unlocked {
+            background-color: #16a34a;
+        }
+
+        .btn-access.unlocked:hover {
+            background-color: #15803d;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 10px;
+        }
+
+        header h1 {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1918;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            color: var(--text-sub);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            font-family: var(--font-serif);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* --- CƠ CHẾ ẨN/HIỆN THEO QUYỀN TRUY CẬP (EDIT MODE) --- */
+        .controls-panel { display: none; }
+        .btn-edit-popup { display: none !important; }
+        .person-card .btn-delete { display: none !important; }
+
+        body.edit-mode .controls-panel { display: block; }
+        body.edit-mode .btn-edit-popup { display: block !important; }
+        body.edit-mode .person-card:hover .btn-delete { display: flex !important; }
+
+        /* Form điều khiển */
+        .controls-panel {
+            background: #ffffff;
+            border: 1px solid #e8e5e1;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .controls-panel h2 {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: #3e3a37;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-sub);
+        }
+
+        .form-group input, .form-group select {
+            padding: 9px 12px;
+            border: 1px solid #dcd7d0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            background: #faf8f5;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--line-color);
+            background: #fff;
+        }
+
+        .btn-add {
+            background-color: #3e3a37;
+            color: #fff;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            height: 40px;
+        }
+
+        .btn-add:hover {
+            background-color: #1a1918;
+        }
+
+        /* Viewport hiển thị & Công cụ Zoom */
+        .tree-viewport-wrapper {
+            position: relative;
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e8e5e1;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+
+        .zoom-toolbar {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            padding: 6px 10px;
+            border-radius: 12px;
+            border: 1px solid #e0dad3;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .zoom-btn {
+            background: #f4f0eb;
+            color: #3e3a37;
+            border: 1px solid #d8d2ca;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .zoom-btn:hover {
+            background: #3e3a37;
+            color: #ffffff;
+            border-color: #3e3a37;
+        }
+
+        .zoom-display {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #555;
+            min-width: 48px;
+            text-align: center;
+            padding: 0 4px;
+        }
+
+        .tree-viewport {
+            position: relative;
+            overflow: auto;
+            padding: 60px 40px;
+            min-height: 600px;
+            max-height: 80vh;
+            cursor: grab;
+        }
+
+        .tree-viewport:active {
+            cursor: grabbing;
+        }
+
+        .tree-transform-layer {
+            position: relative;
+            transform-origin: 0 0;
+            transition: transform 0.15s ease-out;
+            width: max-content;
+            margin: 0 auto;
+            min-width: 100%;
+        }
+
+        /* CHẾ ĐỘ XUẤT ẢNH: tắt zoom + transition để tọa độ đo được là tọa độ thật,
+           và chừa lề 60px NGAY TRONG layer để card và line SVG dùng chung một hệ tọa độ */
+        .exporting .tree-transform-layer {
+            transform: none !important;
+            transition: none !important;
+            margin: 0 !important;
+            min-width: 0 !important;
+            padding: 60px;
+        }
+
+        /* HEADER DÀNH CHO XUẤT ẢNH */
+        .export-header {
+            display: none;
+            text-align: center;
+            width: 100%;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+        .exporting .export-header {
+            display: block;
+        }
+        .export-header h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1a1918;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .export-header p {
+            color: var(--text-sub);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            font-family: var(--font-serif);
+        }
+
+        #linesSvg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .tree-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 80px;
+            position: relative;
+            z-index: 2;
+            width: max-content;
+            margin: 0 auto;
+            min-width: 100%;
+        }
+
+        .generation-row {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            position: relative;
+        }
+
+        .family-cluster {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: rgba(250, 248, 245, 0.5);
+            border-radius: 16px;
+            border: 1px dashed #e0dad3;
+        }
+
+        .person-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 130px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .avatar-wrapper {
+            width: 90px;
+            height: 90px;
+            position: relative;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 50%;
+            background-color: #e2ddd5;
+            transition: transform 0.2s;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .person-card:hover .avatar-img {
+            transform: scale(1.05);
+        }
+
+        .person-label {
+            width: 100%;
+            padding: 5px 8px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+        }
+
+        .gender-male { background-color: var(--bg-male); }
+        .gender-female { background-color: var(--bg-female); }
+
+        .person-name {
+            font-family: var(--font-serif);
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #222;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .person-role {
+            font-size: 0.7rem;
+            color: #555;
+            margin-top: 1px;
+            font-style: italic;
+        }
+
+        .btn-delete {
+            position: absolute;
+            top: -4px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.7rem;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* POP-UP TOOLTIP THÔNG TIN */
+        .info-tooltip {
+            position: fixed;
+            display: none;
+            background: #ffffff;
+            border: 1px solid #3e3a37;
+            padding: 14px 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+            z-index: 1000;
+            min-width: 260px;
+            pointer-events: auto;
+            transform: translate(-50%, -105%);
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .info-tooltip h4 {
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            color: #1a1918;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .info-tooltip p {
+            font-size: 0.8rem;
+            color: #444;
+            margin: 4px 0;
+        }
+
+        .info-tooltip strong {
+            color: #6e6a66;
+        }
+
+        .btn-edit-popup {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            padding: 7px 10px;
+            background-color: #dc2626;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-edit-popup:hover {
+            background-color: #b91c1c;
+        }
+
+        /* MODAL CHỈNH SỬA THÔNG TIN */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-container {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 650px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .modal-header h3 {
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            color: #1a1918;
+        }
+
+        .btn-close-modal {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-save-modal {
+            background-color: #2563eb;
+            color: white;
+            padding: 9px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-save-modal:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-cancel-modal {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 9px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-sub);
+            font-style: italic;
+            margin-top: 60px;
+            font-family: var(--font-serif);
+        }
+
+        /* --- XỬ LÝ ẨN RÁC (ARTIFACTS) KHI XUẤT ẢNH --- */
+        .exporting .tree-viewport-wrapper {
+             border: none !important;
+             box-shadow: none !important;
+             background: transparent !important;
+        }
+        .exporting .tree-viewport {
+            overflow: visible !important;
+            max-height: none !important;
+        }
+        .exporting .zoom-toolbar {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-left-bar">
+    <button type="button" id="btnExportPNG" class="btn-export" style="background-color: #059669;">Xuất PNG</button>
+    <button type="button" id="btnExportSVG" class="btn-export" style="background-color: #0284c7;">Xuất SVG</button>
+</div>
+
+<div class="top-bar">
+    <button type="button" id="btnAccess" class="btn-access">Truy cập</button>
+</div>
+
+<header>
+    <h1>GIA PHẢ HỌ CÙ ĐÌNH</h1>
+    <p>Địa chỉ: Thôn Đại Phùng, Xã Đan Phượng, Huyện Đan Phượng, Tỉnh Hà Tây</p>
+    <p>Địa chỉ sau sáp nhập: Thôn Đại Phùng, Xã Đan Phượng, Thành phố Hà Nội</p>
+</header>
+
+<div class="container">
+    <div class="controls-panel">
+        <h2>Thêm Thành Viên Mới</h2>
+        <form id="memberForm" onsubmit="return false;" class="form-grid">
+            <div class="form-group">
+                <label>Họ & Tên (*)</label>
+                <input type="text" id="name" required placeholder="VD: Cù Đình A">
+            </div>
+
+            <div class="form-group">
+                <label>Tự / Húy (Tên chữ/húy)</label>
+                <input type="text" id="courtesyName" placeholder="VD: Tự Phúc An, Húy Văn">
+            </div>
+
+            <div class="form-group">
+                <label>Giới tính (*)</label>
+                <select id="gender" required>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Vai Trò / Danh Xưng</label>
+                <input type="text" id="role" placeholder="VD: Ông nội, Trưởng nam...">
+            </div>
+
+            <div class="form-group">
+                <label>Đời Thứ (*)</label>
+                <input type="number" id="generation" min="1" value="1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Năm sinh - Năm mất</label>
+                <input type="text" id="years" placeholder="1930 - 2010 (hoặc để trống)">
+            </div>
+
+            <div class="form-group">
+                <label>Ngày Giỗ (Âm/Dương lịch)</label>
+                <input type="text" id="deathAnniversary" placeholder="VD: 15/08 Âm lịch">
+            </div>
+
+            <div class="form-group">
+                <label>Nơi táng</label>
+                <input type="text" id="address" placeholder="VD: Nghĩa trang Thôn Đại Phùng">
+            </div>
+
+            <div class="form-group">
+                <label>Là con của cặp cha mẹ nào?</label>
+                <select id="parentsSelect">
+                    <option value="">-- Không (Đời 1 / Thủy Tổ) --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Kết hôn với (Vợ/Chồng)</label>
+                <select id="spouseSelect">
+                    <option value="">-- Chọn Vợ/Chồng (nếu có) --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Ảnh Đại Diện</label>
+                <input type="file" id="avatar" accept="image/*">
+            </div>
+
+            <button type="button" id="btnAddMember" class="btn-add">Thêm Thành Viên</button>
+        </form>
+    </div>
+
+    <!-- Khung Viewport & Công cụ Zoom -->
+    <div class="tree-viewport-wrapper">
+        <div class="zoom-toolbar">
+            <button type="button" class="zoom-btn" id="btnZoomOut" title="Thu nhỏ (-)">-</button>
+            <span class="zoom-display" id="zoomDisplay">100%</span>
+            <button type="button" class="zoom-btn" id="btnZoomIn" title="Phóng to (+)">+</button>
+            <button type="button" class="zoom-btn" id="btnZoomReset" title="Về 100%" style="width: auto; padding: 0 8px; font-size: 0.75rem;">100%</button>
+            <button type="button" class="zoom-btn" id="btnZoomFit" title="Tự thu phóng xem toàn bộ gia phả" style="width: auto; padding: 0 8px; font-size: 0.75rem;">Fit All</button>
+        </div>
+
+        <div class="tree-viewport" id="viewport">
+            <div class="tree-transform-layer" id="transformLayer">
+                <!-- Tiêu đề này chỉ hiển thị khi xuất ảnh để đảm bảo nằm gọn trong hình -->
+                <div id="exportHeader" class="export-header">
+                    <h1>GIA PHẢ HỌ CÙ ĐÌNH</h1>
+                    <p>Địa chỉ: Thôn Đại Phùng, Xã Đan Phượng, Huyện Đan Phượng, Tỉnh Hà Tây</p>
+                    <p>Địa chỉ sau sáp nhập: Thôn Đại Phùng, Xã Đan Phượng, Thành phố Hà Nội</p>
+                </div>
+
+                <svg id="linesSvg"></svg>
+                <div class="tree-container" id="treeContainer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pop-up Tooltip thông tin khi hover -->
+<div id="tooltip" class="info-tooltip">
+    <h4 id="ttName">---</h4>
+    <p><strong>Đời thứ:</strong> <span id="ttGeneration" style="color: #ea580c; font-weight: bold;">N/A</span></p>
+    <p><strong>Là con của:</strong> <span id="ttParents" style="color: #059669; font-weight: bold;">N/A</span></p>
+    <p><strong>Tự/Húy:</strong> <span id="ttCourtesy">N/A</span></p>
+    <p><strong>Giới tính:</strong> <span id="ttGender">N/A</span></p>
+    <p><strong>Là vợ/chồng của:</strong> <span id="ttSpouses">Chưa cập nhật</span></p>
+    <p><strong>Năm sinh/mất:</strong> <span id="ttYears">N/A</span></p>
+    <p><strong>Ngày giỗ:</strong> <span id="ttAnniversary">N/A</span></p>
+    <p><strong>Nơi táng:</strong> <span id="ttAddress">N/A</span></p>
+    <p><strong>Vai trò:</strong> <span id="ttRole">N/A</span></p>
+    <button type="button" id="btnEditMember" class="btn-edit-popup">Sửa thông tin</button>
+</div>
+
+<!-- MODAL SỬA THÔNG TIN THÀNH VIÊN -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Chỉnh Sửa Thông Tin Thành Viên</h3>
+            <button type="button" class="btn-close-modal" id="btnCloseModal">✕</button>
+        </div>
+        <form id="editForm" onsubmit="return false;" class="form-grid">
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label>Họ & Tên (*)</label>
+                <input type="text" id="editName" required>
+            </div>
+
+            <div class="form-group">
+                <label>Tự / Húy (Tên chữ/húy)</label>
+                <input type="text" id="editCourtesyName">
+            </div>
+
+            <div class="form-group">
+                <label>Giới tính (*)</label>
+                <select id="editGender" required>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Vai Trò / Danh Xưng</label>
+                <input type="text" id="editRole">
+            </div>
+
+            <div class="form-group">
+                <label>Đời Thứ (*)</label>
+                <input type="number" id="editGeneration" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Năm sinh - Năm mất</label>
+                <input type="text" id="editYears">
+            </div>
+
+            <div class="form-group">
+                <label>Ngày Giỗ (Âm/Dương lịch)</label>
+                <input type="text" id="editDeathAnniversary">
+            </div>
+
+            <div class="form-group">
+                <label>Nơi táng</label>
+                <input type="text" id="editAddress">
+            </div>
+
+            <div class="form-group">
+                <label>Là con của cặp cha mẹ nào?</label>
+                <select id="editParentsSelect">
+                    <option value="">-- Không (Đời 1 / Thủy Tổ) --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Kết hôn với (Vợ/Chồng)</label>
+                <select id="editSpouseSelect">
+                    <option value="">-- Chọn Vợ/Chồng (nếu có) --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Thay Ảnh Đại Diện (để trống giữ nguyên)</label>
+                <input type="file" id="editAvatar" accept="image/*">
+            </div>
+        </form>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel-modal" id="btnCancelModal">Hủy bỏ</button>
+            <button type="button" class="btn-save-modal" id="btnSaveModal">Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+    /* =========================================
+       XỬ LÝ BẢO MẬT: CHỈ NHẬP MẬT KHẨU ADMIN
+       ========================================= */
+    let isAuthenticated = false;
+    const MASTER_PASSWORD = 'admin';
+
+    const btnAccess = document.getElementById('btnAccess');
+
+    btnAccess.addEventListener('click', () => {
+        if (isAuthenticated) {
+            alert('Bạn đã ở chế độ Quản trị viên!');
+            return;
+        }
+        const userInput = prompt('Vui lòng nhập mã truy cập');
+        if (userInput === null) return;
+        if (userInput === MASTER_PASSWORD) {
+            isAuthenticated = true;
+            document.body.classList.add('edit-mode');
+            btnAccess.innerText = 'Đã mở khóa';
+            btnAccess.classList.add('unlocked');
+            alert('Đăng nhập Admin thành công! Đã mở khóa tính năng.');
+            setTimeout(drawLines, 100);
+        } else {
+            alert('Mật khẩu không chính xác!');
+        }
+    });
+
+    /* =========================================
+       CHỨC NĂNG XUẤT ẢNH PNG VÀ SVG
+       ========================================= */
+    async function exportTree(format) {
+        const node = document.getElementById('transformLayer');
+        const btn = document.getElementById(format === 'png' ? 'btnExportPNG' : 'btnExportSVG');
+        const originalText = btn.innerText;
+        btn.innerText = 'Đang xuất...';
+
+        // CSS .exporting sẽ ép transform:none + transition:none + chừa lề 60px trong layer
+        document.body.classList.add('exporting');
+
+        try {
+            // Chờ font + 2 frame để layout ổn định, rồi mới đo và vẽ line.
+            // Vì không còn transition nên tọa độ đo được là tọa độ cuối cùng.
+            if (document.fonts && document.fonts.ready) await document.fonts.ready;
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            void node.offsetWidth; // ép reflow
+            drawLines();
+
+            const opts = {
+                quality: 1.0,
+                backgroundColor: '#fcfbfa',
+                width: node.offsetWidth,   // đã gồm lề 60px (border-box)
+                height: node.offsetHeight,
+                style: { transform: 'none', transition: 'none', margin: '0' }
+            };
+
+            let dataUrl;
+            if (format === 'png') {
+                dataUrl = await htmlToImage.toPng(node, opts);
+            } else {
+                dataUrl = await htmlToImage.toSvg(node, opts);
+            }
+
+            const link = document.createElement('a');
+            link.download = `Gia_Pha_Ho_Cu_Dinh.${format}`;
+            link.href = dataUrl;
+            link.click();
+        } catch (error) {
+            console.error('Lỗi khi xuất ảnh:', error);
+            alert('Có lỗi xảy ra khi xuất ảnh. Vui lòng kiểm tra lại.');
+        } finally {
+            btn.innerText = originalText;
+            document.body.classList.remove('exporting');
+            requestAnimationFrame(drawLines); // vẽ lại line cho giao diện thường
+        }
+    }
+
+    document.getElementById('btnExportPNG').addEventListener('click', () => exportTree('png'));
+    document.getElementById('btnExportSVG').addEventListener('click', () => exportTree('svg'));
+
+
+    /* =========================================
+       CHỨC NĂNG CƠ BẢN CỦA ỨNG DỤNG GIA PHẢ
+       ========================================= */
+    function getDefaultFemaleAvatar() {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+            <rect width="300" height="300" fill="#bebebe"/>
+            <circle cx="150" cy="82" r="32" fill="#787878"/>
+            <path d="M 52 285 C 60 220, 110 190, 150 208 C 190 190, 240 220, 248 285 C 248 290, 52 290, 52 285 Z" fill="#ffffff"/>
+            <path d="M 126 160 L 174 160 L 170 205 Q 150 222 130 205 Z" fill="#ffffff"/>
+            <path d="M 108 128 C 108 85, 192 85, 192 128 C 192 165, 150 190, 150 190 C 150 190, 108 165, 108 128 Z" fill="#ffffff"/>
+            <path d="M 108 128 C 105 100, 120 78, 150 78 C 180 78, 195 100, 192 128 C 182 108, 162 96, 150 102 C 135 96, 118 108, 108 128 Z" fill="#787878"/>
+            <ellipse cx="106" cy="138" rx="5" ry="10" fill="#ffffff"/>
+            <ellipse cx="194" cy="138" rx="5" ry="10" fill="#ffffff"/>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    function getDefaultMaleAvatar() {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+            <rect width="300" height="300" fill="#bebebe"/>
+            <path d="M 45 285 C 55 210, 105 185, 150 198 C 195 185, 245 210, 255 285 C 255 290, 45 290, 45 285 Z" fill="#787878"/>
+            <path d="M 126 150 L 174 150 L 170 205 Q 150 220 130 205 Z" fill="#ffffff"/>
+            <polygon points="120,188 142,230 150,205" fill="#a0a0a0"/>
+            <polygon points="180,188 158,230 150,205" fill="#a0a0a0"/>
+            <polygon points="144,212 156,212 160,285 150,295 140,285" fill="#ffffff"/>
+            <path d="M 108 120 C 108 80, 192 80, 192 120 C 192 155, 150 180, 150 180 C 150 180, 108 155, 108 120 Z" fill="#ffffff"/>
+            <path d="M 102 118 C 98 85, 125 65, 150 65 C 175 65, 202 85, 198 118 C 192 92, 172 80, 150 84 C 128 80, 108 92, 102 118 Z" fill="#787878"/>
+            <ellipse cx="106" cy="128" rx="5" ry="10" fill="#ffffff"/>
+            <ellipse cx="194" cy="128" rx="5" ry="10" fill="#ffffff"/>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    function isDefaultAvatar(url) {
+        if (!url) return true;
+        return url.startsWith('data:image/svg+xml') || url.includes('unsplash.com');
+    }
+
+    let members = JSON.parse(localStorage.getItem('familyTree_v15')) || [];
+    let currentHoveredPersonId = null;
+    let hideTooltipTimeout = null;
+
+    // QUẢN LÝ ZOOM & TRANSFORM
+    let currentZoom = 1.0;
+    const transformLayer = document.getElementById('transformLayer');
+    const viewport = document.getElementById('viewport');
+    const zoomDisplay = document.getElementById('zoomDisplay');
+
+    function applyZoom(zoom) {
+        currentZoom = Math.min(Math.max(zoom, 0.25), 2.0);
+        transformLayer.style.transform = `scale(${currentZoom})`;
+        zoomDisplay.textContent = Math.round(currentZoom * 100) + '%';
+        requestAnimationFrame(drawLines);
+    }
+
+    document.getElementById('btnZoomIn').addEventListener('click', () => applyZoom(currentZoom + 0.15));
+    document.getElementById('btnZoomOut').addEventListener('click', () => applyZoom(currentZoom - 0.15));
+    document.getElementById('btnZoomReset').addEventListener('click', () => applyZoom(1.0));
+    document.getElementById('btnZoomFit').addEventListener('click', () => {
+        applyZoom(1.0);
+        const cWidth = document.getElementById('treeContainer').scrollWidth;
+        const vWidth = viewport.clientWidth - 80;
+        if (cWidth > 0 && vWidth > 0) {
+            let fitRatio = vWidth / cWidth;
+            if (fitRatio > 1) fitRatio = 1;
+            applyZoom(fitRatio);
+        }
+    });
+
+    viewport.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.08 : -0.08;
+            applyZoom(currentZoom + delta);
+        }
+    }, { passive: false });
+
+    // Kéo thả cuộn khung nhìn (Pan)
+    let isPanning = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    viewport.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.person-card') || e.target.closest('.zoom-toolbar')) return;
+        isPanning = true;
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+    });
+
+    viewport.addEventListener('mouseleave', () => isPanning = false);
+    viewport.addEventListener('mouseup', () => isPanning = false);
+    viewport.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const y = e.pageY - viewport.offsetTop;
+        viewport.scrollLeft = scrollLeft - (x - startX) * 1.5;
+        viewport.scrollTop = scrollTop - (y - startY) * 1.5;
+    });
+
+    const parentsSelect = document.getElementById('parentsSelect');
+    const spouseSelect = document.getElementById('spouseSelect');
+    const editParentsSelect = document.getElementById('editParentsSelect');
+    const editSpouseSelect = document.getElementById('editSpouseSelect');
+    const treeContainer = document.getElementById('treeContainer');
+    const svg = document.getElementById('linesSvg');
+    const tooltip = document.getElementById('tooltip');
+
+    parentsSelect.addEventListener('change', () => {
+        const pVal = parentsSelect.value;
+        if (!pVal) return;
+        const matches = pVal.match(/person_\d+/g);
+        if (matches && matches.length > 0) {
+            const parent1 = members.find(m => m.id === matches[0]);
+            if (parent1) document.getElementById('generation').value = parent1.generation + 1;
+        }
+    });
+
+    spouseSelect.addEventListener('change', () => {
+        const sVal = spouseSelect.value;
+        const spouse = members.find(m => m.id === sVal);
+        if (spouse) document.getElementById('generation').value = spouse.generation;
+    });
+
+    function updateDropdowns(targetParents = parentsSelect, targetSpouse = spouseSelect, excludeId = null) {
+        targetParents.innerHTML = '<option value="">-- Không (Đời 1 / Thủy Tổ) --</option>';
+        targetSpouse.innerHTML = '<option value="">-- Chọn Vợ/Chồng (nếu có) --</option>';
+
+        members.forEach(m => {
+            if (excludeId && m.id === excludeId) return;
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = `${m.name} (Đời ${m.generation})`;
+            targetSpouse.appendChild(opt);
+        });
+
+        const couples = [];
+        members.forEach(m => {
+            if (excludeId && m.id === excludeId) return;
+            if (m.spouses && m.spouses.length > 0) {
+                m.spouses.forEach(sId => {
+                    if (excludeId && sId === excludeId) return;
+                    const spouse = members.find(x => x.id === sId);
+                    if (spouse) {
+                        const coupleKey = [m.id, sId].sort().join('_');
+                        if (!couples.some(c => c.key === coupleKey)) {
+                            couples.push({ key: coupleKey, label: `Cặp: ${m.name} & ${spouse.name} (Đời ${m.generation})` });
+                        }
+                    }
+                });
+            } else {
+                couples.push({ key: m.id, label: `Cha/Mẹ đơn: ${m.name} (Đời ${m.generation})` });
+            }
+        });
+
+        couples.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.key;
+            opt.textContent = c.label;
+            targetParents.appendChild(opt);
+        });
+    }
+
+    function readFileAsBase64(file) {
+        return new Promise((resolve) => {
+            if (!file) { resolve(null); return; }
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    document.getElementById('btnAddMember').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('name');
+        if (!nameInput.value.trim()) { alert('Vui lòng nhập Họ & Tên!'); nameInput.focus(); return; }
+
+        const name = nameInput.value.trim();
+        const courtesyName = document.getElementById('courtesyName').value.trim();
+        const gender = document.getElementById('gender').value;
+        const role = document.getElementById('role').value.trim();
+        const generation = parseInt(document.getElementById('generation').value) || 1;
+        const years = document.getElementById('years').value.trim();
+        const deathAnniversary = document.getElementById('deathAnniversary').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const parentKey = parentsSelect.value;
+        const spouseId = spouseSelect.value;
+        
+        let avatar = await readFileAsBase64(document.getElementById('avatar').files[0]);
+        if (!avatar) avatar = (gender === 'female') ? getDefaultFemaleAvatar() : getDefaultMaleAvatar();
+
+        const newId = 'person_' + Date.now();
+        const newPerson = { id: newId, name, courtesyName, gender, role, generation, years, deathAnniversary, address, parentKey, spouses: spouseId ? [spouseId] : [], avatar };
+
+        if (spouseId) {
+            const spouse = members.find(m => m.id === spouseId);
+            if (spouse) {
+                if (!spouse.spouses) spouse.spouses = [];
+                if (!spouse.spouses.includes(newId)) spouse.spouses.push(newId);
+            }
+        }
+
+        members.push(newPerson);
+        saveAndRender();
+
+        ['name', 'courtesyName', 'role', 'years', 'deathAnniversary', 'address', 'avatar'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('generation').value = '1';
+    });
+
+    function deletePerson(id) {
+        if (confirm('Bạn có chắc chắn muốn xóa thành viên này?')) {
+            members = members.filter(m => m.id !== id);
+            members.forEach(m => {
+                if (m.spouses) m.spouses = m.spouses.filter(sId => sId !== id);
+            });
+            saveAndRender();
+        }
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('familyTree_v15', JSON.stringify(members));
+        updateDropdowns(parentsSelect, spouseSelect);
+        renderTree();
+        setTimeout(drawLines, 50);
+    }
+
+    function renderTree() {
+        treeContainer.innerHTML = '';
+        if (members.length === 0) {
+            treeContainer.innerHTML = '<div class="empty-state">Chưa có dữ liệu. Xin mời mở khóa quyền truy cập để nhập liệu!</div>';
+            svg.innerHTML = '';
+            return;
+        }
+
+        const genMap = {};
+        members.forEach(m => {
+            if (!genMap[m.generation]) genMap[m.generation] = [];
+            genMap[m.generation].push(m);
+        });
+
+        Object.keys(genMap).sort((a, b) => a - b).forEach(gen => {
+            const row = document.createElement('div');
+            row.className = 'generation-row';
+            row.dataset.gen = gen;
+            const renderedIds = new Set();
+
+            genMap[gen].forEach(person => {
+                if (renderedIds.has(person.id)) return;
+
+                if (person.spouses && person.spouses.length > 0) {
+                    const cluster = document.createElement('div');
+                    cluster.className = 'family-cluster';
+                    cluster.appendChild(createPersonCard(person));
+                    renderedIds.add(person.id);
+
+                    person.spouses.forEach(sId => {
+                        const spouse = members.find(x => x.id === sId);
+                        if (spouse && !renderedIds.has(spouse.id)) {
+                            cluster.appendChild(createPersonCard(spouse));
+                            renderedIds.add(spouse.id);
+                        }
+                    });
+                    row.appendChild(cluster);
+                } else {
+                    const cluster = document.createElement('div');
+                    cluster.className = 'family-cluster';
+                    cluster.appendChild(createPersonCard(person));
+                    row.appendChild(cluster);
+                    renderedIds.add(person.id);
+                }
+            });
+            treeContainer.appendChild(row);
+        });
+    }
+
+    function createPersonCard(person) {
+        const card = document.createElement('div');
+        card.className = 'person-card';
+        card.dataset.id = person.id;
+        card.dataset.parentKey = person.parentKey || '';
+
+        card.innerHTML = `
+            <button class="btn-delete" onclick="event.stopPropagation(); deletePerson('${person.id}')">✕</button>
+            <div class="avatar-wrapper">
+                <img src="${person.avatar}" class="avatar-img" alt="${person.name}">
+            </div>
+            <div class="person-label ${person.gender === 'female' ? 'gender-female' : 'gender-male'}">
+                <div class="person-name">${person.name}</div>
+                <div class="person-role">${person.role || 'Thành viên'}</div>
+            </div>
+        `;
+
+        card.addEventListener('mouseenter', (e) => {
+            if (hideTooltipTimeout) clearTimeout(hideTooltipTimeout);
+            currentHoveredPersonId = person.id;
+            
+            document.getElementById('ttName').textContent = person.name;
+            document.getElementById('ttGeneration').textContent = person.generation || '1';
+
+            let parentText = '...';
+            if (person.parentKey) {
+                const pIds = person.parentKey.match(/person_\d+/g);
+                if (pIds && pIds.length > 0) {
+                    const pNames = pIds.map(id => {
+                        const p = members.find(m => m.id === id);
+                        return p ? p.name : '';
+                    }).filter(Boolean);
+                    if (pNames.length > 0) {
+                        parentText = pNames.join(' và ');
+                    }
+                }
+            }
+
+            document.getElementById('ttParents').textContent = parentText;
+            document.getElementById('ttCourtesy').textContent = person.courtesyName || 'Chưa cập nhật';
+            document.getElementById('ttGender').textContent = person.gender === 'female' ? 'Nữ' : 'Nam';
+            
+            const spText = (person.spouses && person.spouses.length > 0) 
+                ? person.spouses.map(sId => members.find(m => m.id === sId)?.name).filter(Boolean).join(', ') 
+                : 'Chưa cập nhật';
+            document.getElementById('ttSpouses').textContent = spText;
+            document.getElementById('ttYears').textContent = person.years || 'Chưa cập nhật';
+            document.getElementById('ttAnniversary').textContent = person.deathAnniversary || 'Chưa cập nhật';
+            document.getElementById('ttAddress').textContent = person.address || 'Chưa cập nhật';
+            document.getElementById('ttRole').textContent = person.role || 'Thành viên';
+
+            const cardRect = card.getBoundingClientRect();
+            tooltip.style.left = (cardRect.left + cardRect.width / 2) + 'px';
+            tooltip.style.top = (cardRect.top - 10) + 'px';
+            tooltip.style.display = 'block';
+        });
+
+        card.addEventListener('mouseleave', () => {
+            hideTooltipTimeout = setTimeout(() => tooltip.style.display = 'none', 300);
+        });
+
+        return card;
+    }
+
+    tooltip.addEventListener('mouseenter', () => { if (hideTooltipTimeout) clearTimeout(hideTooltipTimeout); });
+    tooltip.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+
+    document.getElementById('btnEditMember').addEventListener('click', () => {
+        if (!currentHoveredPersonId) return;
+        const person = members.find(m => m.id === currentHoveredPersonId);
+        if (!person) return;
+        tooltip.style.display = 'none';
+
+        document.getElementById('editId').value = person.id;
+        document.getElementById('editName').value = person.name || '';
+        document.getElementById('editCourtesyName').value = person.courtesyName || '';
+        document.getElementById('editGender').value = person.gender || 'male';
+        document.getElementById('editRole').value = person.role || '';
+        document.getElementById('editGeneration').value = person.generation || 1;
+        document.getElementById('editYears').value = person.years || '';
+        document.getElementById('editDeathAnniversary').value = person.deathAnniversary || '';
+        document.getElementById('editAddress').value = person.address || '';
+        document.getElementById('editAvatar').value = '';
+
+        updateDropdowns(editParentsSelect, editSpouseSelect, person.id);
+        editParentsSelect.value = person.parentKey || '';
+        editSpouseSelect.value = (person.spouses && person.spouses.length > 0) ? person.spouses[0] : '';
+
+        document.getElementById('editModal').style.display = 'flex';
+    });
+
+    const closeModal = () => document.getElementById('editModal').style.display = 'none';
+    document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+    document.getElementById('btnCancelModal').addEventListener('click', closeModal);
+
+    document.getElementById('btnSaveModal').addEventListener('click', async () => {
+        const id = document.getElementById('editId').value;
+        const person = members.find(m => m.id === id);
+        if (!person) return;
+
+        const nameInput = document.getElementById('editName');
+        if (!nameInput.value.trim()) { alert('Vui lòng nhập Họ & Tên!'); nameInput.focus(); return; }
+
+        const newGender = document.getElementById('editGender').value;
+        person.name = nameInput.value.trim();
+        person.courtesyName = document.getElementById('editCourtesyName').value.trim();
+        
+        if (person.gender !== newGender && isDefaultAvatar(person.avatar)) {
+            person.avatar = (newGender === 'female') ? getDefaultFemaleAvatar() : getDefaultMaleAvatar();
+        }
+        person.gender = newGender;
+
+        person.role = document.getElementById('editRole').value.trim();
+        person.generation = parseInt(document.getElementById('editGeneration').value) || 1;
+        person.years = document.getElementById('editYears').value.trim();
+        person.deathAnniversary = document.getElementById('editDeathAnniversary').value.trim();
+        person.address = document.getElementById('editAddress').value.trim();
+
+        person.parentKey = editParentsSelect.value;
+
+        if (person.spouses) {
+            person.spouses.forEach(sId => {
+                const sp = members.find(x => x.id === sId);
+                if (sp && sp.spouses) sp.spouses = sp.spouses.filter(x => x !== person.id);
+            });
+        }
+
+        const newSpouseId = editSpouseSelect.value;
+        person.spouses = newSpouseId ? [newSpouseId] : [];
+        if (newSpouseId) {
+            const spouse = members.find(m => m.id === newSpouseId);
+            if (spouse) {
+                if (!spouse.spouses) spouse.spouses = [];
+                if (!spouse.spouses.includes(person.id)) spouse.spouses.push(person.id);
+            }
+        }
+
+        const avatarFile = document.getElementById('editAvatar').files[0];
+        if (avatarFile) {
+            const newAvatar = await readFileAsBase64(avatarFile);
+            if (newAvatar) person.avatar = newAvatar;
+        }
+
+        saveAndRender();
+        closeModal();
+    });
+
+    /* =========================================
+       TÍNH TOÁN VẼ ĐƯỜNG NỐI GIA PHẢ CẢI TIẾN
+       ========================================= */
+    function drawLines() {
+        svg.innerHTML = '';
+        
+        const layerRect = transformLayer.getBoundingClientRect();
+        // Đo scale THẬT đang áp lên layer (không dùng currentZoom): khi layer đang chạy transition
+        // thì rect và scale luôn khớp nhau, nên line không bao giờ bị co/lệch.
+        const scale = (transformLayer.offsetWidth > 0 ? layerRect.width / transformLayer.offsetWidth : 1) || 1.0;
+        
+        svg.setAttribute('width', Math.max(transformLayer.scrollWidth, transformLayer.clientWidth) + 300);
+        svg.setAttribute('height', Math.max(transformLayer.scrollHeight, transformLayer.clientHeight) + 300);
+
+        if (layerRect.width === 0 || layerRect.height === 0) return;
+
+        document.querySelectorAll('.person-card').forEach(card => {
+            const parentKey = card.dataset.parentKey;
+            if (!parentKey) return;
+
+            let parentX, parentBottomY;
+
+            // 1. Xác định điểm xuất phát từ cha mẹ (Chính giữa cạnh dưới của ô chữ nhật bo góc cluster)
+            const matches = parentKey.match(/person_\d+/g);
+            if (matches && matches.length > 0) {
+                const parentCard = document.querySelector(`[data-id="${matches[0]}"]`);
+                if (parentCard) {
+                    const pCluster = parentCard.closest('.family-cluster');
+                    const clusterRect = (pCluster || parentCard).getBoundingClientRect();
+
+                    // Tọa độ X nằm giữa cluster cha mẹ, Y nằm tại cạnh dưới của cluster cha mẹ
+                    parentX = ((clusterRect.left + clusterRect.right) / 2 - layerRect.left) / scale;
+                    parentBottomY = (clusterRect.bottom - layerRect.top) / scale;
+                }
+            }
+
+            if (parentX !== undefined && parentBottomY !== undefined) {
+                // 2. Tọa độ của con: Đích đâm tới nằm ở chính giữa hình tròn ảnh chân dung (.avatar-wrapper)
+                const avatarWrapper = card.querySelector('.avatar-wrapper') || card;
+                const avatarRect = avatarWrapper.getBoundingClientRect();
+
+                const childX = ((avatarRect.left + avatarRect.right) / 2 - layerRect.left) / scale;
+                const childTopY = (avatarRect.top - layerRect.top) / scale;
+
+                // 3. Line ngang nằm chính giữa khoảng trống của 2 thế hệ
+                const midY = parentBottomY + (childTopY - parentBottomY) / 2;
+                
+                // Vẽ đường gấp khúc vuông góc từ cha mẹ -> midY -> con cái
+                createSvgPath(`M ${parentX} ${parentBottomY} L ${parentX} ${midY} L ${childX} ${midY} L ${childX} ${childTopY}`);
+            }
+        });
+    }
+
+    function createSvgPath(d) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#5a5550');
+        path.setAttribute('stroke-width', '2');
+        svg.appendChild(path);
+    }
+
+    const resizeObserver = new ResizeObserver(() => requestAnimationFrame(drawLines));
+    resizeObserver.observe(treeContainer);
+    window.addEventListener('resize', () => requestAnimationFrame(drawLines));
+
+    updateDropdowns(parentsSelect, spouseSelect);
+    renderTree();
+    setTimeout(drawLines, 100);
+</script>
+
+</body>
+</html>
