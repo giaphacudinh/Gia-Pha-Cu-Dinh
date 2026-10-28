@@ -282,8 +282,7 @@
             min-width: 100%;
         }
 
-        /* CHẾ ĐỘ XUẤT ẢNH: tắt zoom + transition để tọa độ đo được là tọa độ thật,
-           và chừa lề 60px NGAY TRONG layer để card và line SVG dùng chung một hệ tọa độ */
+        /* CHẾ ĐỘ XUẤT ẢNH */
         .exporting .tree-transform-layer {
             transform: none !important;
             transition: none !important;
@@ -580,7 +579,6 @@
             font-family: var(--font-serif);
         }
 
-        /* --- XỬ LÝ ẨN RÁC (ARTIFACTS) KHI XUẤT ẢNH --- */
         .exporting .tree-viewport-wrapper {
              border: none !important;
              box-shadow: none !important;
@@ -694,7 +692,6 @@
 
         <div class="tree-viewport" id="viewport">
             <div class="tree-transform-layer" id="transformLayer">
-                <!-- Tiêu đề này chỉ hiển thị khi xuất ảnh để đảm bảo nằm gọn trong hình -->
                 <div id="exportHeader" class="export-header">
                     <h1>GIA PHẢ HỌ CÙ ĐÌNH</h1>
                     <p>Địa chỉ: Thôn Đại Phùng, Xã Đan Phượng, Huyện Đan Phượng, Tỉnh Hà Tây</p>
@@ -801,8 +798,33 @@
     </div>
 </div>
 
-<!-- Scripts -->
-<script>
+<!-- Firebase SDK (Modular v10) -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        doc, 
+        setDoc, 
+        deleteDoc, 
+        onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Cấu hình Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDOjzHks-rb3nFP4qGW5lrRi34B7dc7hiA",
+      authDomain: "gia-pha-cu-dinh.firebaseapp.com",
+      projectId: "gia-pha-cu-dinh",
+      storageBucket: "gia-pha-cu-dinh.firebasestorage.app",
+      messagingSenderId: "56286804296",
+      appId: "1:56286804296:web:39cadb005905cd2cea1b7d"
+    };
+
+    // Khởi tạo Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const membersCollection = collection(db, "members");
+
     /* =========================================
        XỬ LÝ BẢO MẬT: CHỈ NHẬP MẬT KHẨU ADMIN
        ========================================= */
@@ -839,21 +861,18 @@
         const originalText = btn.innerText;
         btn.innerText = 'Đang xuất...';
 
-        // CSS .exporting sẽ ép transform:none + transition:none + chừa lề 60px trong layer
         document.body.classList.add('exporting');
 
         try {
-            // Chờ font + 2 frame để layout ổn định, rồi mới đo và vẽ line.
-            // Vì không còn transition nên tọa độ đo được là tọa độ cuối cùng.
             if (document.fonts && document.fonts.ready) await document.fonts.ready;
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-            void node.offsetWidth; // ép reflow
+            void node.offsetWidth; 
             drawLines();
 
             const opts = {
                 quality: 1.0,
                 backgroundColor: '#fcfbfa',
-                width: node.offsetWidth,   // đã gồm lề 60px (border-box)
+                width: node.offsetWidth,
                 height: node.offsetHeight,
                 style: { transform: 'none', transition: 'none', margin: '0' }
             };
@@ -875,16 +894,15 @@
         } finally {
             btn.innerText = originalText;
             document.body.classList.remove('exporting');
-            requestAnimationFrame(drawLines); // vẽ lại line cho giao diện thường
+            requestAnimationFrame(drawLines);
         }
     }
 
     document.getElementById('btnExportPNG').addEventListener('click', () => exportTree('png'));
     document.getElementById('btnExportSVG').addEventListener('click', () => exportTree('svg'));
 
-
     /* =========================================
-       CHỨC NĂNG CƠ BẢN CỦA ỨNG DỤNG GIA PHẢ
+       CÁC HÀM XỬ LÝ ẢNH MẶC ĐỊNH
        ========================================= */
     function getDefaultFemaleAvatar() {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
@@ -921,7 +939,7 @@
         return url.startsWith('data:image/svg+xml') || url.includes('unsplash.com');
     }
 
-    let members = JSON.parse(localStorage.getItem('familyTree_v15')) || [];
+    let members = [];
     let currentHoveredPersonId = null;
     let hideTooltipTimeout = null;
 
@@ -1056,6 +1074,24 @@
         });
     }
 
+    /* =========================================
+       ĐỒNG BỘ DỮ LIỆU VỚI FIREBASE FIRESTORE
+       ========================================= */
+
+    // 1. Lắng nghe dữ liệu realtime từ Cloud Firestore
+    onSnapshot(membersCollection, (snapshot) => {
+        members = [];
+        snapshot.forEach((docSnap) => {
+            members.push(docSnap.data());
+        });
+        updateDropdowns(parentsSelect, spouseSelect);
+        renderTree();
+        setTimeout(drawLines, 50);
+    }, (error) => {
+        console.error("Lỗi đồng bộ dữ liệu Firebase: ", error);
+    });
+
+    // 2. Thêm thành viên lên Firebase
     document.getElementById('btnAddMember').addEventListener('click', async (e) => {
         e.preventDefault();
         const nameInput = document.getElementById('name');
@@ -1078,37 +1114,49 @@
         const newId = 'person_' + Date.now();
         const newPerson = { id: newId, name, courtesyName, gender, role, generation, years, deathAnniversary, address, parentKey, spouses: spouseId ? [spouseId] : [], avatar };
 
-        if (spouseId) {
-            const spouse = members.find(m => m.id === spouseId);
-            if (spouse) {
-                if (!spouse.spouses) spouse.spouses = [];
-                if (!spouse.spouses.includes(newId)) spouse.spouses.push(newId);
+        try {
+            await setDoc(doc(db, "members", newId), newPerson);
+
+            if (spouseId) {
+                const spouse = members.find(m => m.id === spouseId);
+                if (spouse) {
+                    const updatedSpouses = spouse.spouses ? [...spouse.spouses] : [];
+                    if (!updatedSpouses.includes(newId)) {
+                        updatedSpouses.push(newId);
+                        await setDoc(doc(db, "members", spouseId), { ...spouse, spouses: updatedSpouses });
+                    }
+                }
             }
+
+            ['name', 'courtesyName', 'role', 'years', 'deathAnniversary', 'address', 'avatar'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('generation').value = '1';
+        } catch (err) {
+            console.error("Lỗi khi thêm thành viên: ", err);
+            alert("Lỗi khi thêm thành viên lên server!");
         }
-
-        members.push(newPerson);
-        saveAndRender();
-
-        ['name', 'courtesyName', 'role', 'years', 'deathAnniversary', 'address', 'avatar'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('generation').value = '1';
     });
 
-    function deletePerson(id) {
+    // 3. Xóa thành viên khỏi Firebase
+    window.deletePerson = async function(id) {
         if (confirm('Bạn có chắc chắn muốn xóa thành viên này?')) {
-            members = members.filter(m => m.id !== id);
-            members.forEach(m => {
-                if (m.spouses) m.spouses = m.spouses.filter(sId => sId !== id);
-            });
-            saveAndRender();
+            try {
+                await deleteDoc(doc(db, "members", id));
+                
+                // Cập nhật lại danh sách vợ/chồng của các thành viên khác
+                const updatePromises = members
+                    .filter(m => m.spouses && m.spouses.includes(id))
+                    .map(m => {
+                        const newSpouses = m.spouses.filter(sId => sId !== id);
+                        return setDoc(doc(db, "members", m.id), { ...m, spouses: newSpouses });
+                    });
+                
+                await Promise.all(updatePromises);
+            } catch (err) {
+                console.error("Lỗi khi xóa thành viên: ", err);
+                alert("Lỗi khi xóa thành viên khỏi server!");
+            }
         }
-    }
-
-    function saveAndRender() {
-        localStorage.setItem('familyTree_v15', JSON.stringify(members));
-        updateDropdowns(parentsSelect, spouseSelect);
-        renderTree();
-        setTimeout(drawLines, 50);
-    }
+    };
 
     function renderTree() {
         treeContainer.innerHTML = '';
@@ -1166,7 +1214,7 @@
         card.dataset.parentKey = person.parentKey || '';
 
         card.innerHTML = `
-            <button class="btn-delete" onclick="event.stopPropagation(); deletePerson('${person.id}')">✕</button>
+            <button class="btn-delete" onclick="event.stopPropagation(); window.deletePerson('${person.id}')">✕</button>
             <div class="avatar-wrapper">
                 <img src="${person.avatar}" class="avatar-img" alt="${person.name}">
             </div>
@@ -1254,6 +1302,7 @@
     document.getElementById('btnCloseModal').addEventListener('click', closeModal);
     document.getElementById('btnCancelModal').addEventListener('click', closeModal);
 
+    // 4. Lưu thông tin chỉnh sửa lên Firebase
     document.getElementById('btnSaveModal').addEventListener('click', async () => {
         const id = document.getElementById('editId').value;
         const person = members.find(m => m.id === id);
@@ -1262,59 +1311,71 @@
         const nameInput = document.getElementById('editName');
         if (!nameInput.value.trim()) { alert('Vui lòng nhập Họ & Tên!'); nameInput.focus(); return; }
 
+        const updatedPerson = { ...person };
         const newGender = document.getElementById('editGender').value;
-        person.name = nameInput.value.trim();
-        person.courtesyName = document.getElementById('editCourtesyName').value.trim();
+
+        updatedPerson.name = nameInput.value.trim();
+        updatedPerson.courtesyName = document.getElementById('editCourtesyName').value.trim();
         
-        if (person.gender !== newGender && isDefaultAvatar(person.avatar)) {
-            person.avatar = (newGender === 'female') ? getDefaultFemaleAvatar() : getDefaultMaleAvatar();
+        if (updatedPerson.gender !== newGender && isDefaultAvatar(updatedPerson.avatar)) {
+            updatedPerson.avatar = (newGender === 'female') ? getDefaultFemaleAvatar() : getDefaultMaleAvatar();
         }
-        person.gender = newGender;
+        updatedPerson.gender = newGender;
 
-        person.role = document.getElementById('editRole').value.trim();
-        person.generation = parseInt(document.getElementById('editGeneration').value) || 1;
-        person.years = document.getElementById('editYears').value.trim();
-        person.deathAnniversary = document.getElementById('editDeathAnniversary').value.trim();
-        person.address = document.getElementById('editAddress').value.trim();
+        updatedPerson.role = document.getElementById('editRole').value.trim();
+        updatedPerson.generation = parseInt(document.getElementById('editGeneration').value) || 1;
+        updatedPerson.years = document.getElementById('editYears').value.trim();
+        updatedPerson.deathAnniversary = document.getElementById('editDeathAnniversary').value.trim();
+        updatedPerson.address = document.getElementById('editAddress').value.trim();
+        updatedPerson.parentKey = editParentsSelect.value;
 
-        person.parentKey = editParentsSelect.value;
-
-        if (person.spouses) {
-            person.spouses.forEach(sId => {
+        // Xóa liên kết spouse cũ
+        if (updatedPerson.spouses) {
+            for (const sId of updatedPerson.spouses) {
                 const sp = members.find(x => x.id === sId);
-                if (sp && sp.spouses) sp.spouses = sp.spouses.filter(x => x !== person.id);
-            });
+                if (sp && sp.spouses) {
+                    const newSpouses = sp.spouses.filter(x => x !== updatedPerson.id);
+                    await setDoc(doc(db, "members", sp.id), { ...sp, spouses: newSpouses });
+                }
+            }
         }
 
+        // Cập nhật spouse mới
         const newSpouseId = editSpouseSelect.value;
-        person.spouses = newSpouseId ? [newSpouseId] : [];
+        updatedPerson.spouses = newSpouseId ? [newSpouseId] : [];
         if (newSpouseId) {
             const spouse = members.find(m => m.id === newSpouseId);
             if (spouse) {
-                if (!spouse.spouses) spouse.spouses = [];
-                if (!spouse.spouses.includes(person.id)) spouse.spouses.push(person.id);
+                const updatedSp = spouse.spouses ? [...spouse.spouses] : [];
+                if (!updatedSp.includes(updatedPerson.id)) {
+                    updatedSp.push(updatedPerson.id);
+                    await setDoc(doc(db, "members", spouse.id), { ...spouse, spouses: updatedSp });
+                }
             }
         }
 
         const avatarFile = document.getElementById('editAvatar').files[0];
         if (avatarFile) {
             const newAvatar = await readFileAsBase64(avatarFile);
-            if (newAvatar) person.avatar = newAvatar;
+            if (newAvatar) updatedPerson.avatar = newAvatar;
         }
 
-        saveAndRender();
-        closeModal();
+        try {
+            await setDoc(doc(db, "members", id), updatedPerson);
+            closeModal();
+        } catch (err) {
+            console.error("Lỗi khi cập nhật thành viên: ", err);
+            alert("Không thể lưu thông tin vào cơ sở dữ liệu!");
+        }
     });
 
     /* =========================================
-       TÍNH TOÁN VẼ ĐƯỜNG NỐI GIA PHẢ CẢI TIẾN
+       TÍNH TOÁN VẼ ĐƯỜNG NỐI GIA PHẢ
        ========================================= */
     function drawLines() {
         svg.innerHTML = '';
         
         const layerRect = transformLayer.getBoundingClientRect();
-        // Đo scale THẬT đang áp lên layer (không dùng currentZoom): khi layer đang chạy transition
-        // thì rect và scale luôn khớp nhau, nên line không bao giờ bị co/lệch.
         const scale = (transformLayer.offsetWidth > 0 ? layerRect.width / transformLayer.offsetWidth : 1) || 1.0;
         
         svg.setAttribute('width', Math.max(transformLayer.scrollWidth, transformLayer.clientWidth) + 300);
@@ -1328,7 +1389,6 @@
 
             let parentX, parentBottomY;
 
-            // 1. Xác định điểm xuất phát từ cha mẹ (Chính giữa cạnh dưới của ô chữ nhật bo góc cluster)
             const matches = parentKey.match(/person_\d+/g);
             if (matches && matches.length > 0) {
                 const parentCard = document.querySelector(`[data-id="${matches[0]}"]`);
@@ -1336,24 +1396,20 @@
                     const pCluster = parentCard.closest('.family-cluster');
                     const clusterRect = (pCluster || parentCard).getBoundingClientRect();
 
-                    // Tọa độ X nằm giữa cluster cha mẹ, Y nằm tại cạnh dưới của cluster cha mẹ
                     parentX = ((clusterRect.left + clusterRect.right) / 2 - layerRect.left) / scale;
                     parentBottomY = (clusterRect.bottom - layerRect.top) / scale;
                 }
             }
 
             if (parentX !== undefined && parentBottomY !== undefined) {
-                // 2. Tọa độ của con: Đích đâm tới nằm ở chính giữa hình tròn ảnh chân dung (.avatar-wrapper)
                 const avatarWrapper = card.querySelector('.avatar-wrapper') || card;
                 const avatarRect = avatarWrapper.getBoundingClientRect();
 
                 const childX = ((avatarRect.left + avatarRect.right) / 2 - layerRect.left) / scale;
                 const childTopY = (avatarRect.top - layerRect.top) / scale;
 
-                // 3. Line ngang nằm chính giữa khoảng trống của 2 thế hệ
                 const midY = parentBottomY + (childTopY - parentBottomY) / 2;
                 
-                // Vẽ đường gấp khúc vuông góc từ cha mẹ -> midY -> con cái
                 createSvgPath(`M ${parentX} ${parentBottomY} L ${parentX} ${midY} L ${childX} ${midY} L ${childX} ${childTopY}`);
             }
         });
@@ -1371,10 +1427,6 @@
     const resizeObserver = new ResizeObserver(() => requestAnimationFrame(drawLines));
     resizeObserver.observe(treeContainer);
     window.addEventListener('resize', () => requestAnimationFrame(drawLines));
-
-    updateDropdowns(parentsSelect, spouseSelect);
-    renderTree();
-    setTimeout(drawLines, 100);
 </script>
 
 </body>
