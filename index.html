@@ -1163,37 +1163,58 @@
             genMap[m.generation].push(m);
         });
 
+        let prevPos = {}; // id -> vị trí cụm (người + vợ/chồng) trong hàng đời liền trên
+
         Object.keys(genMap).sort((a, b) => a - b).forEach(gen => {
             const row = document.createElement('div');
             row.className = 'generation-row';
             row.dataset.gen = gen;
             const renderedIds = new Set();
 
+            // 1) Gom thành các cụm (người + vợ/chồng) theo thứ tự khai báo
+            const clusters = [];
             genMap[gen].forEach(person => {
                 if (renderedIds.has(person.id)) return;
-
-                if (person.spouses && person.spouses.length > 0) {
-                    const cluster = document.createElement('div');
-                    cluster.className = 'family-cluster';
-                    cluster.appendChild(createPersonCard(person));
-                    renderedIds.add(person.id);
-
-                    person.spouses.forEach(sId => {
-                        const spouse = members.find(x => x.id === sId);
-                        if (spouse && !renderedIds.has(spouse.id)) {
-                            cluster.appendChild(createPersonCard(spouse));
-                            renderedIds.add(spouse.id);
-                        }
-                    });
-                    row.appendChild(cluster);
-                } else {
-                    const cluster = document.createElement('div');
-                    cluster.className = 'family-cluster';
-                    cluster.appendChild(createPersonCard(person));
-                    row.appendChild(cluster);
-                    renderedIds.add(person.id);
-                }
+                const ids = [person.id];
+                renderedIds.add(person.id);
+                (person.spouses || []).forEach(sId => {
+                    const spouse = members.find(x => x.id === sId);
+                    if (spouse && !renderedIds.has(spouse.id)) {
+                        ids.push(spouse.id);
+                        renderedIds.add(spouse.id);
+                    }
+                });
+                clusters.push({ ids, idx: clusters.length, rank: null });
             });
+
+            // 2) Mỗi cụm có "rank" = vị trí cha/mẹ ở đời trên. Sắp xếp các cụm có cha mẹ theo rank
+            //    (anh chị em cùng cha mẹ giữ thứ tự khai báo); cụm không có cha mẹ giữ nguyên chỗ cũ.
+            clusters.forEach(c => {
+                c.ids.forEach(id => {
+                    const p = members.find(x => x.id === id);
+                    const pIds = (p && p.parentKey ? p.parentKey.match(/person_\d+/g) : null) || [];
+                    pIds.forEach(pid => {
+                        if (prevPos[pid] !== undefined && (c.rank === null || prevPos[pid] < c.rank)) c.rank = prevPos[pid];
+                    });
+                });
+            });
+            const slots = [];
+            clusters.forEach((c, i) => { if (c.rank !== null) slots.push(i); });
+            const sorted = slots.map(i => clusters[i]).sort((x, y) => x.rank - y.rank || x.idx - y.idx);
+            slots.forEach((slot, k) => { clusters[slot] = sorted[k]; });
+
+            // 3) Dựng giao diện và ghi nhớ vị trí để đời sau tham chiếu
+            const pos = {};
+            clusters.forEach((c, i) => {
+                const cluster = document.createElement('div');
+                cluster.className = 'family-cluster';
+                c.ids.forEach(id => {
+                    cluster.appendChild(createPersonCard(members.find(x => x.id === id)));
+                    pos[id] = i;
+                });
+                row.appendChild(cluster);
+            });
+            prevPos = pos;
             treeContainer.appendChild(row);
         });
     }
@@ -1500,4 +1521,3 @@
 
 </body>
 </html>
-Cù Hải Long @2026. Phiên bản 1.0 (Chính thức)
