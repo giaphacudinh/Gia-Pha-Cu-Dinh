@@ -263,9 +263,9 @@
         .tree-viewport {
             position: relative;
             overflow: auto;
-            padding: 60px 40px;
-            min-height: 600px;
-            max-height: 80vh;
+            padding: 30px 20px;
+            min-height: 300px;
+            max-height: 60vh;
             cursor: grab;
         }
 
@@ -293,6 +293,64 @@
             border: 1px solid #cfcfcf;
             border-radius: 6px;
         }
+
+        /* Khung gia phả thu gọn còn 1/2 chiều ngang (màn hình rộng) và 1/2 chiều cao */
+        @media (min-width: 2000px) {
+            .tree-viewport-wrapper { width: 100%; margin: 0 auto; }
+        }
+
+        /* Menu Chức năng */
+        .func-menu { position: relative; }
+        .btn-func { background-color: #3e3a37; }
+        .func-dropdown {
+            display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 230px;
+            flex-direction: column; background: #fff; border: 1px solid #e0dad3; border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 6px;
+        }
+        .func-menu.open .func-dropdown { display: flex; }
+        .func-dropdown button {
+            background: none; border: none; text-align: left; padding: 10px 12px; border-radius: 8px;
+            font: inherit; font-size: 0.92rem; color: #2b2724; cursor: pointer;
+        }
+        .func-dropdown button:hover { background: #f4f0eb; }
+
+        /* Cửa sổ tìm kiếm */
+        .search-overlay {
+            display: none; position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.45);
+            align-items: flex-start; justify-content: center; padding-top: 8vh;
+        }
+        .search-overlay.open { display: flex; }
+        .search-box {
+            position: relative; width: min(580px, 92vw); max-height: 84vh; overflow: auto;
+            background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .search-box h3 { font-family: var(--font-serif); margin-bottom: 12px; }
+        .search-close { position: absolute; top: 12px; right: 14px; border: none; background: none; font-size: 1.2rem; cursor: pointer; }
+        #searchInput { width: 100%; box-sizing: border-box; padding: 10px 12px; font: inherit; border: 1px solid #cfcfcf; border-radius: 8px; }
+        #searchResults { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+        .sr-item { text-align: left; border: 1px solid #ece7e1; background: #faf8f5; border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; }
+        .sr-item:hover { background: #f1ebe3; }
+        .sr-item small { color: #777; }
+        .sr-empty { color: #777; font-style: italic; padding: 6px 2px; }
+        .sd-card { display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #ece7e1; }
+        .sd-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; }
+        .sd-info h4 { font-family: var(--font-serif); font-size: 1.2rem; margin-bottom: 6px; }
+        .sd-info p { font-size: 0.9rem; line-height: 1.55; }
+        .sd-locate { margin-top: 10px; background: #dc2626; color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 0.88rem; cursor: pointer; }
+
+        /* Khoanh đỏ vị trí cần tìm */
+        .person-card.found {
+            outline: 4px solid #dc2626; outline-offset: 8px; border-radius: 18px;
+            box-shadow: 0 0 0 12px rgba(220,38,38,0.12); animation: foundPulse 1.2s ease-in-out 3;
+        }
+        @keyframes foundPulse { 0%,100% { outline-color: #dc2626; } 50% { outline-color: #fca5a5; } }
+        .exporting .person-card.found { outline: none !important; box-shadow: none !important; animation: none !important; }
+        .locate-bar {
+            display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2500;
+            background: #dc2626; color: #fff; padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        }
+        .locate-bar.show { display: block; }
+        .locate-bar button { background: none; border: none; color: #fff; font-size: 1rem; cursor: pointer; margin-left: 6px; }
 
         /* CHẾ ĐỘ XUẤT ẢNH: tắt zoom + transition để tọa độ đo được là tọa độ thật,
            và chừa lề 60px NGAY TRONG layer để card và line SVG dùng chung một hệ tọa độ */
@@ -610,8 +668,15 @@
 <body>
 
 <div class="top-left-bar">
-    <button type="button" id="btnExportPNG" class="btn-export" style="background-color: #059669;">Xuất PNG</button>
-    <button type="button" id="btnExportSVG" class="btn-export" style="background-color: #0284c7;">Xuất SVG</button>
+    <div class="func-menu" id="funcMenu">
+        <button type="button" id="btnFunc" class="btn-export btn-func">☰ Chức năng</button>
+        <div class="func-dropdown">
+            <button type="button" id="btnExportPNG">🖼️ Xuất PNG</button>
+            <button type="button" id="btnExportSVG">📐 Xuất SVG</button>
+            <button type="button" id="btnInfoSearch">🔎 Tìm kiếm thông tin</button>
+            <button type="button" id="btnLocate">📍 Tìm kiếm vị trí</button>
+        </div>
+    </div>
 </div>
 
 <div class="top-bar">
@@ -719,6 +784,18 @@
         </div>
     </div>
 </div>
+
+<!-- Cửa sổ tìm kiếm (thông tin / vị trí) -->
+<div id="searchModal" class="search-overlay">
+    <div class="search-box">
+        <button type="button" class="search-close" id="searchClose">✕</button>
+        <h3 id="searchTitle">Tìm kiếm thông tin</h3>
+        <input type="search" id="searchInput" placeholder="Nhập tên rồi nhấn Enter..." autocomplete="off">
+        <div id="searchResults"></div>
+        <div id="searchDetail"></div>
+    </div>
+</div>
+<div id="locateBar" class="locate-bar">📍 <span id="locateName"></span> <button type="button" id="locateClear" title="Bỏ đánh dấu">✕</button></div>
 
 <!-- Pop-up Tooltip thông tin khi hover -->
 <div id="tooltip" class="info-tooltip">
@@ -857,42 +934,106 @@
     /* =========================================
        CHỨC NĂNG XUẤT ẢNH PNG VÀ SVG
        ========================================= */
+    function triggerDownload(url, filename) {
+        const a = document.createElement('a');
+        a.download = filename;
+        a.href = url;
+        a.click();
+    }
+
+    // Dựng file SVG vector thuần (không dùng foreignObject): chữ là <text> nên rõ nét ở mọi mức phóng to,
+    // đọc được tên + vai trò/tự xưng của từng người và mở được bằng Illustrator/Inkscape/Figma/trình duyệt.
+    function buildVectorSvg(layer) {
+        const L = layer.getBoundingClientRect();
+        const W = layer.offsetWidth, H = layer.offsetHeight;
+        const rel = (el) => { const r = el.getBoundingClientRect(); return { x: r.left - L.left, y: r.top - L.top, w: r.width, h: r.height }; };
+        const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const ctx = document.createElement('canvas').getContext('2d');
+        const defs = [], parts = [];
+        let clipN = 0;
+
+        const addText = (el, maxW) => {
+            let str = el.textContent.trim();
+            if (!str) return;
+            const cs = getComputedStyle(el), r = rel(el);
+            if (cs.textTransform === 'uppercase') str = str.toUpperCase();
+            let size = parseFloat(cs.fontSize);
+            ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+            const w = ctx.measureText(str).width;
+            if (maxW && w > maxW) size = size * maxW / w; // tên dài: thu nhỏ chữ cho vừa khung
+            const ls = cs.letterSpacing !== 'normal' ? ` letter-spacing="${parseFloat(cs.letterSpacing)}"` : '';
+            parts.push(`<text x="${(r.x + r.w / 2).toFixed(1)}" y="${(r.y + r.h / 2 + size * 0.35).toFixed(1)}" text-anchor="middle" font-family="${esc(cs.fontFamily)}" font-size="${size.toFixed(2)}" font-weight="${cs.fontWeight}" font-style="${cs.fontStyle}" fill="${cs.color}"${ls}>${esc(str)}</text>`);
+        };
+
+        // Tiêu đề
+        const hdr = document.getElementById('exportHeader');
+        if (hdr && getComputedStyle(hdr).display !== 'none') hdr.querySelectorAll('h1, p').forEach(el => addText(el, 0));
+
+        // Line nối
+        document.querySelectorAll('#linesSvg path').forEach(p => {
+            parts.push(`<path d="${p.getAttribute('d')}" fill="none" stroke="${p.getAttribute('stroke')}" stroke-width="${p.getAttribute('stroke-width')}"/>`);
+        });
+
+        // Khung từng gia đình
+        layer.querySelectorAll('.family-cluster').forEach(c => {
+            const r = rel(c), cs = getComputedStyle(c), bw = parseFloat(cs.borderTopWidth) || 0;
+            parts.push(`<rect x="${(r.x + bw / 2).toFixed(1)}" y="${(r.y + bw / 2).toFixed(1)}" width="${(r.w - bw).toFixed(1)}" height="${(r.h - bw).toFixed(1)}" rx="${parseFloat(cs.borderTopLeftRadius) || 0}" fill="${cs.backgroundColor}" stroke="${cs.borderTopColor}" stroke-width="${bw}"${cs.borderTopStyle === 'dashed' ? ' stroke-dasharray="4 3"' : ''}/>`);
+        });
+
+        // Từng người: ảnh tròn + ô tên/vai trò
+        layer.querySelectorAll('.person-card').forEach(card => {
+            const img = card.querySelector('.avatar-img'), label = card.querySelector('.person-label');
+            if (img) {
+                const r = rel(img), bw = parseFloat(getComputedStyle(img).borderTopWidth) || 0;
+                const cx = (r.x + r.w / 2).toFixed(1), cy = (r.y + r.h / 2).toFixed(1), id = 'av' + (clipN++);
+                defs.push(`<clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${(r.w / 2 - bw).toFixed(1)}"/></clipPath>`);
+                parts.push(`<circle cx="${cx}" cy="${cy}" r="${(r.w / 2).toFixed(1)}" fill="#ffffff" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>`);
+                parts.push(`<image x="${(r.x + bw).toFixed(1)}" y="${(r.y + bw).toFixed(1)}" width="${(r.w - 2 * bw).toFixed(1)}" height="${(r.h - 2 * bw).toFixed(1)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})" href="${esc(img.src)}" xlink:href="${esc(img.src)}"/>`);
+            }
+            if (label) {
+                const r = rel(label), cs = getComputedStyle(label);
+                parts.push(`<rect x="${r.x.toFixed(1)}" y="${r.y.toFixed(1)}" width="${r.w.toFixed(1)}" height="${r.h.toFixed(1)}" rx="${parseFloat(cs.borderTopLeftRadius) || 0}" fill="${cs.backgroundColor}"/>`);
+                const n = label.querySelector('.person-name'), ro = label.querySelector('.person-role');
+                if (n) addText(n, r.w - 14);
+                if (ro) addText(ro, r.w - 14);
+            }
+        });
+
+        return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\n<defs>${defs.join('')}</defs>\n<rect width="100%" height="100%" fill="#fcfbfa"/>\n${parts.join('\n')}\n</svg>`;
+    }
+
     async function exportTree(format) {
         const node = document.getElementById('transformLayer');
-        const btn = document.getElementById(format === 'png' ? 'btnExportPNG' : 'btnExportSVG');
+        const btn = document.getElementById('btnFunc');
         const originalText = btn.innerText;
         btn.innerText = 'Đang xuất...';
 
-        // CSS .exporting sẽ ép transform:none + transition:none + chừa lề 60px trong layer
+        // CSS .exporting ép transform:none + transition:none + chừa lề 60px trong layer
         document.body.classList.add('exporting');
 
         try {
-            // Chờ font + 2 frame để layout ổn định, rồi mới đo và vẽ line.
-            // Vì không còn transition nên tọa độ đo được là tọa độ cuối cùng.
             if (document.fonts && document.fonts.ready) await document.fonts.ready;
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
             void node.offsetWidth; // ép reflow
             drawLines();
 
-            const opts = {
-                quality: 1.0,
-                backgroundColor: '#fcfbfa',
-                width: node.offsetWidth,   // đã gồm lề 60px (border-box)
-                height: node.offsetHeight,
-                style: { transform: 'none', transition: 'none', margin: '0' }
-            };
-
-            let dataUrl;
             if (format === 'png') {
-                dataUrl = await htmlToImage.toPng(node, opts);
+                const W = node.offsetWidth, H = node.offsetHeight;
+                const dataUrl = await htmlToImage.toPng(node, {
+                    quality: 1.0,
+                    backgroundColor: '#fcfbfa',
+                    width: W,
+                    height: H,
+                    pixelRatio: 20000 / Math.max(W, H), // cạnh dài nhất của ảnh = 20000px (tối đa)
+                    style: { transform: 'none', transition: 'none', margin: '0' }
+                });
+                triggerDownload(dataUrl, 'Gia_Pha_Ho_Cu_Dinh.png');
             } else {
-                dataUrl = await htmlToImage.toSvg(node, opts);
+                const blob = new Blob([buildVectorSvg(node)], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                triggerDownload(url, 'Gia_Pha_Ho_Cu_Dinh.svg');
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
             }
-
-            const link = document.createElement('a');
-            link.download = `Gia_Pha_Ho_Cu_Dinh.${format}`;
-            link.href = dataUrl;
-            link.click();
         } catch (error) {
             console.error('Lỗi khi xuất ảnh:', error);
             alert('Có lỗi xảy ra khi xuất ảnh. Vui lòng kiểm tra lại.');
@@ -1080,6 +1221,121 @@
     }
 
     [parentsSelect, spouseSelect, editParentsSelect, editSpouseSelect].forEach(setupSelectSearch);
+
+    /* =========================================
+       CHỨC NĂNG: MENU, TÌM KIẾM THÔNG TIN, TÌM KIẾM VỊ TRÍ
+       ========================================= */
+    let highlightedId = null;
+    let searchMode = 'info';
+    const escHtml = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const funcMenu = document.getElementById('funcMenu');
+    const searchModal = document.getElementById('searchModal');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchDetail = document.getElementById('searchDetail');
+
+    document.getElementById('btnFunc').addEventListener('click', (e) => { e.stopPropagation(); funcMenu.classList.toggle('open'); });
+    document.addEventListener('click', () => funcMenu.classList.remove('open'));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { funcMenu.classList.remove('open'); closeSearch(); } });
+    document.getElementById('btnInfoSearch').addEventListener('click', () => openSearch('info'));
+    document.getElementById('btnLocate').addEventListener('click', () => openSearch('locate'));
+    document.getElementById('searchClose').addEventListener('click', closeSearch);
+    document.getElementById('locateClear').addEventListener('click', clearLocate);
+    searchModal.addEventListener('click', (e) => { if (e.target === searchModal) closeSearch(); });
+
+    function openSearch(mode) {
+        searchMode = mode;
+        document.getElementById('searchTitle').textContent = mode === 'info' ? 'Tìm kiếm thông tin' : 'Tìm kiếm vị trí';
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+        searchDetail.innerHTML = '';
+        searchModal.classList.add('open');
+        setTimeout(() => searchInput.focus(), 50);
+    }
+    function closeSearch() { searchModal.classList.remove('open'); }
+
+    function findPeople(q) {
+        const key = normVN(q);
+        if (!key) return [];
+        return members.filter(m => normVN(m.name).includes(key) || normVN(m.courtesyName).includes(key));
+    }
+    function renderResults(list) {
+        if (!list.length) { searchResults.innerHTML = '<div class="sr-empty">Không tìm thấy ai khớp với từ khóa.</div>'; return; }
+        searchResults.innerHTML = list.slice(0, 30).map(m =>
+            `<button type="button" class="sr-item" data-id="${m.id}">${escHtml(m.name)} <small>— Đời ${escHtml(m.generation)}${m.role ? ' · ' + escHtml(m.role) : ''}</small></button>`
+        ).join('');
+    }
+    function choose(id) {
+        if (searchMode === 'info') showDetail(id);
+        else { closeSearch(); locatePerson(id); }
+    }
+
+    searchInput.addEventListener('input', () => {
+        searchDetail.innerHTML = '';
+        if (!searchInput.value.trim()) { searchResults.innerHTML = ''; return; }
+        renderResults(findPeople(searchInput.value));
+    });
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const q = normVN(searchInput.value);
+        if (!q) return;
+        const list = findPeople(searchInput.value);
+        renderResults(list);
+        if (!list.length) { searchDetail.innerHTML = ''; return; }
+        choose((list.find(m => normVN(m.name) === q) || list[0]).id);
+    });
+    searchResults.addEventListener('click', (e) => { const b = e.target.closest('.sr-item'); if (b) choose(b.dataset.id); });
+    searchDetail.addEventListener('click', (e) => { const b = e.target.closest('.sd-locate'); if (b) { closeSearch(); locatePerson(b.dataset.id); } });
+
+    const parentIdsOf = (p) => (p && p.parentKey ? p.parentKey.match(/person_\d+/g) : null) || [];
+    const namesOf = (ids) => ids.map(i => members.find(m => m.id === i)).filter(Boolean).map(p => p.name).join(', ');
+
+    function showDetail(id) {
+        const p = members.find(m => m.id === id);
+        if (!p) return;
+        const parents = parentIdsOf(p);
+        const grand = [...new Set(parents.flatMap(pid => parentIdsOf(members.find(m => m.id === pid))))];
+        const children = members.filter(m => parentIdsOf(m).includes(p.id)).map(m => m.id);
+        const spouses = [...new Set((p.spouses || []).concat(members.filter(m => (m.spouses || []).includes(p.id)).map(m => m.id)))];
+        const row = (label, v) => `<p><strong>${label}:</strong> ${escHtml(v && String(v).trim() ? v : 'Chưa cập nhật')}</p>`;
+        searchDetail.innerHTML = `
+            <div class="sd-card">
+                <img class="sd-avatar" src="${escHtml(p.avatar)}" alt="">
+                <div class="sd-info">
+                    <h4>${escHtml(p.name)}</h4>
+                    ${row('Tự/Húy', p.courtesyName)}
+                    ${row('Vai trò/Danh xưng', p.role)}
+                    ${row('Đời thứ', p.generation)}
+                    ${row('Là cháu của', namesOf(grand))}
+                    ${row('Là con của', parents.length ? parents.map(i => namesOf([i])).filter(Boolean).join(' và ') : '')}
+                    ${row('Là vợ/chồng của', namesOf(spouses))}
+                    ${row('Là cha/mẹ của', namesOf(children))}
+                    ${row('Năm sinh - Năm mất', p.years)}
+                    ${row('Ngày giỗ', p.deathAnniversary)}
+                    ${row('Nơi táng', p.address)}
+                    <button type="button" class="sd-locate" data-id="${p.id}">📍 Xem vị trí trên gia phả</button>
+                </div>
+            </div>`;
+    }
+
+    function locatePerson(id) {
+        const p = members.find(m => m.id === id);
+        document.querySelectorAll('.person-card.found').forEach(c => c.classList.remove('found'));
+        const card = document.querySelector(`.person-card[data-id="${id}"]`);
+        if (!p || !card) return;
+        highlightedId = id;
+        card.classList.add('found');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        document.getElementById('locateName').textContent = 'Đang đánh dấu: ' + p.name;
+        document.getElementById('locateBar').classList.add('show');
+    }
+    function clearLocate() {
+        highlightedId = null;
+        document.querySelectorAll('.person-card.found').forEach(c => c.classList.remove('found'));
+        document.getElementById('locateBar').classList.remove('show');
+    }
     const treeContainer = document.getElementById('treeContainer');
     const svg = document.getElementById('linesSvg');
     const tooltip = document.getElementById('tooltip');
@@ -1307,6 +1563,7 @@
         card.className = 'person-card';
         card.dataset.id = person.id;
         card.dataset.parentKey = person.parentKey || '';
+        if (person.id === highlightedId) card.classList.add('found');
 
         card.innerHTML = `
             <button class="btn-delete" onclick="event.stopPropagation(); deletePerson('${person.id}')">✕</button>
@@ -1465,40 +1722,67 @@
 
         if (layerRect.width === 0 || layerRect.height === 0) return;
 
+        // Gom các con theo cụm cha/mẹ; mỗi cụm có một "làn" ngang riêng để line không trùng nhau
+        const groups = new Map();
         document.querySelectorAll('.person-card').forEach(card => {
-            const parentKey = card.dataset.parentKey;
-            if (!parentKey) return;
+            const matches = (card.dataset.parentKey || '').match(/person_\d+/g);
+            if (!matches) return;
+            const parentCard = document.querySelector(`[data-id="${matches[0]}"]`);
+            if (!parentCard) return;
+            const pCluster = parentCard.closest('.family-cluster') || parentCard;
+            const pr = pCluster.getBoundingClientRect();
+            const ar = (card.querySelector('.avatar-wrapper') || card).getBoundingClientRect();
+            const cr = (card.closest('.family-cluster') || card).getBoundingClientRect();
+            let g = groups.get(pCluster);
+            if (!g) {
+                g = {
+                    row: pCluster.closest('.generation-row'),
+                    px: ((pr.left + pr.right) / 2 - layerRect.left) / scale,
+                    pBottom: (pr.bottom - layerRect.top) / scale,
+                    kids: [], clusterTop: Infinity, y: 0
+                };
+                groups.set(pCluster, g);
+            }
+            g.kids.push({ x: ((ar.left + ar.right) / 2 - layerRect.left) / scale, top: (ar.top - layerRect.top) / scale });
+            g.clusterTop = Math.min(g.clusterTop, (cr.top - layerRect.top) / scale);
+        });
 
-            let parentX, parentBottomY;
-
-            // 1. Xác định điểm xuất phát từ cha mẹ (Chính giữa cạnh dưới của ô chữ nhật bo góc cluster)
-            const matches = parentKey.match(/person_\d+/g);
-            if (matches && matches.length > 0) {
-                const parentCard = document.querySelector(`[data-id="${matches[0]}"]`);
-                if (parentCard) {
-                    const pCluster = parentCard.closest('.family-cluster');
-                    const clusterRect = (pCluster || parentCard).getBoundingClientRect();
-
-                    // Tọa độ X nằm giữa cluster cha mẹ, Y nằm tại cạnh dưới của cluster cha mẹ
-                    parentX = ((clusterRect.left + clusterRect.right) / 2 - layerRect.left) / scale;
-                    parentBottomY = (clusterRect.bottom - layerRect.top) / scale;
+        // Xếp làn theo từng khoảng giữa hai đời, ưu tiên các làn không cắt ngang line của cụm khác
+        const byRow = new Map();
+        groups.forEach(g => {
+            g.lo = Math.min(g.px, ...g.kids.map(k => k.x));
+            g.hi = Math.max(g.px, ...g.kids.map(k => k.x));
+            if (!byRow.has(g.row)) byRow.set(g.row, []);
+            byRow.get(g.row).push(g);
+        });
+        byRow.forEach(list => {
+            list.sort((a, b) => a.px - b.px);
+            const n = list.length;
+            const need = list.map(() => new Set()); // need[j]: các cụm phải nằm trên (gần cha mẹ hơn) cụm j
+            list.forEach((A, i) => list.forEach((B, j) => {
+                if (i === j) return;
+                if (A.px > B.lo && A.px < B.hi) need[j].add(i);                     // đường dọc của cha mẹ A xuyên qua line ngang B
+                if (A.kids.some(k => k.x > B.lo && k.x < B.hi)) need[i].add(j);     // đường dọc xuống con của A xuyên qua line ngang B
+            }));
+            const order = [], placed = new Set();
+            while (order.length < n) {
+                let pick = -1;
+                for (let k = 0; k < n && pick < 0; k++) {
+                    if (!placed.has(k) && [...need[k]].every(d => placed.has(d))) pick = k;
                 }
+                if (pick < 0) { for (let k = 0; k < n; k++) if (!placed.has(k)) { pick = k; break; } } // mâu thuẫn: theo thứ tự trái -> phải
+                placed.add(pick);
+                order.push(pick);
             }
+            const top = Math.max(...list.map(g => g.pBottom)) + 8;
+            const span = Math.max(Math.min(...list.map(g => g.clusterTop)) - 8 - top, 12);
+            order.forEach((k, lane) => { list[k].y = top + span * (lane + 1) / (n + 1); });
+        });
 
-            if (parentX !== undefined && parentBottomY !== undefined) {
-                // 2. Tọa độ của con: Đích đâm tới nằm ở chính giữa hình tròn ảnh chân dung (.avatar-wrapper)
-                const avatarWrapper = card.querySelector('.avatar-wrapper') || card;
-                const avatarRect = avatarWrapper.getBoundingClientRect();
-
-                const childX = ((avatarRect.left + avatarRect.right) / 2 - layerRect.left) / scale;
-                const childTopY = (avatarRect.top - layerRect.top) / scale;
-
-                // 3. Line ngang nằm chính giữa khoảng trống của 2 thế hệ
-                const midY = parentBottomY + (childTopY - parentBottomY) / 2;
-                
-                // Vẽ đường gấp khúc vuông góc từ cha mẹ -> midY -> con cái
-                createSvgPath(`M ${parentX} ${parentBottomY} L ${parentX} ${midY} L ${childX} ${midY} L ${childX} ${childTopY}`);
-            }
+        groups.forEach(g => {
+            let d = `M ${g.px} ${g.pBottom} L ${g.px} ${g.y} M ${g.lo} ${g.y} L ${g.hi} ${g.y}`;
+            g.kids.forEach(k => { d += ` M ${k.x} ${g.y} L ${k.x} ${k.top}`; });
+            createSvgPath(d);
         });
     }
 
@@ -1604,4 +1888,4 @@
 
 </body>
 </html>
-Cù Hải Long © (Version 1.0 @2026)
+Cù Hải Long © (Version 2.0 @2026)
